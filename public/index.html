@@ -5,23 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat-App</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
-        #messages { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
-        #messages li { background: #fff; margin: 5px 0; padding: 10px; border-radius: 8px; }
-        #messages li span.user { font-weight: bold; margin-right: 5px; color: #007bff; }
-        form { display: flex; margin-top: 10px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
-        button { padding: 10px; margin-left: 5px; border: none; border-radius: 8px; background: #007bff; color: white; cursor: pointer; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        .chat-container {
+            background: #1e1e2f;
+            width: 95%;
+            max-width: 600px;
+            height: 90%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-container h1 {
+            margin: 0;
+            padding: 15px;
+            background: #2c2c3c;
+            text-align: center;
+            font-size: 1.5rem;
+            border-bottom: 1px solid #444;
+        }
+
+        #messages {
+            flex: 1;
+            padding: 10px;
+            list-style: none;
+            overflow-y: auto;
+        }
+
+        #messages li {
+            margin: 5px 0;
+            padding: 10px 15px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+            background: #33334d;
+            position: relative;
+            opacity: 1;
+            transition: opacity 0.5s, transform 0.3s;
+        }
+
+        #messages li span.user {
+            font-weight: bold;
+            margin-right: 8px;
+            color: #ffd700;
+        }
+
+        form {
+            display: flex;
+            padding: 10px;
+            background: #2c2c3c;
+            border-top: 1px solid #444;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: none;
+            outline: none;
+            margin-right: 10px;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #667eea;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #556cd6;
+        }
+
+        #clearBtn {
+            margin: 10px;
+            background: #e94e77;
+            border-radius: 20px;
+            padding: 10px;
+            font-weight: bold;
+        }
+
+        #clearBtn:hover {
+            background: #d43d64;
+        }
+
+        #messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        #messages::-webkit-scrollbar-track {
+            background: #1e1e2f;
+        }
+        #messages::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-<h1>💬 Unser Chat</h1>
-<button id="clearBtn">Chat leeren</button>
-<ul id="messages"></ul>
-<form id="form">
-    <input id="input" autocomplete="off" placeholder="Nachricht schreiben..." />
-    <button>Senden</button>
-</form>
+<div class="chat-container">
+    <h1>💬 Unser Chat</h1>
+    <button id="clearBtn">Chat leeren</button>
+    <ul id="messages"></ul>
+    <form id="form">
+        <input id="input" autocomplete="off" placeholder="Nachricht schreiben..." />
+        <button>Senden</button>
+    </form>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="script.js"></script>
