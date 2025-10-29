@@ -10,8 +10,9 @@ app.use(express.static('public'));
 
 // Benutzername → Passwort
 const allowedUsers = {
-    "Henri": "1234",
-    "Lisa": "abcd"
+    "Blizzz": "1234",
+    "Samuel": "1234",
+    "Temp": "1234"
 };
 
 // Temporäres Nachrichten-Array
