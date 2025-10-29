@@ -14,10 +14,11 @@ socket.on('login-failed', () => {
     alert("Login fehlgeschlagen! Du wirst getrennt.");
 });
 
-// Chatfunktion
+// Chat-Funktion
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const messages = document.getElementById('messages');
+const clearBtn = document.getElementById('clearBtn');
 
 form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -36,5 +37,17 @@ socket.on('chat message', ({user, msg}) => {
     item.appendChild(userSpan);
     item.appendChild(document.createTextNode(msg));
     messages.appendChild(item);
-    window.scrollTo(0, document.body.scrollHeight);
+    messages.scrollTop = messages.scrollHeight;
+});
+
+// Chat leeren Button
+clearBtn.addEventListener('click', () => {
+    if(confirm("Bist du sicher, dass du den Chat leeren willst?")){
+        socket.emit('clear chat');
+    }
+});
+
+// Chat vom Server leeren
+socket.on('chat cleared', () => {
+    messages.innerHTML = '';
 });

@@ -6,7 +6,7 @@
     <title>Chat-App</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
-        #messages { list-style: none; padding: 0; }
+        #messages { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
         #messages li { background: #fff; margin: 5px 0; padding: 10px; border-radius: 8px; }
         #messages li span.user { font-weight: bold; margin-right: 5px; color: #007bff; }
         form { display: flex; margin-top: 10px; }
@@ -16,6 +16,7 @@
 </head>
 <body>
 <h1>💬 Unser Chat</h1>
+<button id="clearBtn">Chat leeren</button>
 <ul id="messages"></ul>
 <form id="form">
     <input id="input" autocomplete="off" placeholder="Nachricht schreiben..." />
