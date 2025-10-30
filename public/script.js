@@ -1,72 +1,57 @@
 const socket = io();
 
-// Login abfragen
-let username = prompt("Gib deinen Namen ein:");
-let password = prompt("Gib dein Passwort ein:");
+// Login
+const loginDiv = document.getElementById("loginDiv");
+const chatDiv = document.getElementById("chatDiv");
+const loginBtn = document.getElementById("loginBtn");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const loginError = document.getElementById("loginError");
 
-socket.emit('login', {name: username, password: password});
-
-socket.on('login-success', () => {
-    alert("Login erfolgreich!");
+loginBtn.addEventListener("click", () => {
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+    socket.emit("login", { username, password });
 });
 
-socket.on('login-failed', () => {
-    alert("Login fehlgeschlagen! Du wirst getrennt.");
+socket.on("loginSuccess", (username) => {
+    loginDiv.style.display = "none";
+    chatDiv.style.display = "block";
+    addMessageToChat({ username: "System", message: `Willkommen ${username}!` });
 });
 
-// Benutzer-Farben
-const userColors = {};
-function getUserColor(username){
-    if(!userColors[username]){
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for(let i=0; i<6; i++){
-            color += letters[Math.floor(Math.random()*16)];
-        }
-        userColors[username] = color;
-    }
-    return userColors[username];
-}
+socket.on("loginError", (msg) => { loginError.textContent = msg; });
 
-const form = document.getElementById('form');
-const input = document.getElementById('input');
-const messages = document.getElementById('messages');
-const clearBtn = document.getElementById('clearBtn');
+// Chat-Verlauf
+const chatBox = document.getElementById("chatBox");
+socket.on("chatHistory", (messages) => {
+    chatBox.innerHTML = "";
+    messages.forEach(addMessageToChat);
+});
 
-form.addEventListener('submit', (e) => {
+// Neue Nachrichten
+socket.on("chatMessage", addMessageToChat);
+
+// Chat leeren
+const clearBtn = document.getElementById("clearBtn");
+clearBtn.addEventListener("click", () => { socket.emit("clearChat"); });
+
+socket.on("chatCleared", () => { chatBox.innerHTML = ""; });
+
+// Nachrichten senden
+const chatForm = document.getElementById("chatForm");
+chatForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    if(input.value){
-        socket.emit('chat message', input.value);
-        input.value = '';
-    }
+    const msg = document.getElementById("messageInput").value;
+    if (msg.trim() === "") return;
+    socket.emit("chatMessage", msg);
+    document.getElementById("messageInput").value = "";
 });
 
-socket.on('chat message', ({user, msg}) => {
-    const item = document.createElement('li');
-
-    // Animation: fade-in + slide
-    item.style.opacity = 0;
-    item.classList.add('new-msg');
-
-    const userSpan = document.createElement('span');
-    userSpan.classList.add('user');
-    userSpan.textContent = user + ':';
-    userSpan.style.color = getUserColor(user);
-
-    item.appendChild(userSpan);
-    item.appendChild(document.createTextNode(msg));
-    messages.appendChild(item);
-
-    setTimeout(() => { item.style.opacity = 1; }, 10);
-    messages.scrollTop = messages.scrollHeight;
-});
-
-clearBtn.addEventListener('click', () => {
-    if(confirm("Bist du sicher, dass du den Chat leeren willst?")){
-        socket.emit('clear chat');
-    }
-});
-
-socket.on('chat cleared', () => {
-    messages.innerHTML = '';
-});
+// Funktion zum Hinzufügen von Nachrichten
+function addMessageToChat(msg) {
+    const p = document.createElement("p");
+    p.textContent = `${msg.username}: ${msg.message}`;
+    chatBox.appendChild(p);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}

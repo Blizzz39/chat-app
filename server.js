@@ -1,58 +1,73 @@
-const express = require('express');
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const server = http.createServer(app);
+const io = new Server(server);
 
-const PORT = process.env.PORT || 3000;
+// MongoDB
+const mongoURI = process.env.MONGODB_URI;
+mongoose.connect(mongoURI)
+    .then(() => console.log("✅ Mit MongoDB verbunden"))
+    .catch(err => console.error("❌ MongoDB-Verbindungsfehler:", err));
 
-// "public" Ordner bereitstellen
-app.use(express.static('public'));
+const chatSchema = new mongoose.Schema({
+    username: String,
+    message: String,
+    timestamp: { type: Date, default: Date.now },
+});
 
-// Benutzername → Passwort
-const allowedUsers = {
-    "Blizzz": "1234",
-    "Samuel": "1234",
-    "Temp": "1234"
+const ChatMessage = mongoose.model("ChatMessage", chatSchema);
+
+// Benutzer
+const users = {
+    Blizzz: "1234",
+    Samuel: "1234",
+    Temp: "1234"
 };
 
-// Temporäres Nachrichten-Array
-let messages = [];
+app.use(express.static(path.join(__dirname, "public")));
 
-io.on('connection', (socket) => {
+io.on("connection", async (socket) => {
+    console.log("🔌 Neuer Benutzer verbunden");
 
-    // Login prüfen
-    socket.on('login', ({name, password}) => {
-        if(allowedUsers[name] && allowedUsers[name] === password){
-            socket.username = name;
-            socket.emit('login-success');
+    const messages = await ChatMessage.find().sort({ timestamp: 1 });
+    socket.emit("chatHistory", messages);
 
-            // Alte Nachrichten senden
-            messages.forEach(m => socket.emit('chat message', m));
+    socket.on("login", ({ username, password }) => {
+        if (users[username] === password) {
+            socket.username = username;
+            socket.emit("loginSuccess", username);
+            io.emit("userJoined", username);
         } else {
-            socket.emit('login-failed');
-            socket.disconnect();
+            socket.emit("loginError", "Falscher Benutzername oder Passwort");
         }
     });
 
-    // Neue Nachricht
-    socket.on('chat message', (msg) => {
-        if(socket.username){
-            const messageData = {user: socket.username, msg};
-            messages.push(messageData);
-            io.emit('chat message', messageData);
-        }
+    socket.on("chatMessage", async (msg) => {
+        if (!socket.username) return;
+        const chatMsg = new ChatMessage({ username: socket.username, message: msg });
+        await chatMsg.save();
+        io.emit("chatMessage", chatMsg);
     });
 
-    // Chat leeren
-    socket.on('clear chat', () => {
-        if(socket.username){ // nur eingeloggte Benutzer
-            messages = []; // Array zurücksetzen
-            io.emit('chat cleared'); // allen Clients mitteilen
-        }
+    socket.on("clearChat", async () => {
+        await ChatMessage.deleteMany({});
+        io.emit("chatCleared");
     });
 
+    socket.on("disconnect", () => {
+        if (socket.username) io.emit("userLeft", socket.username);
+    });
 });
 
-http.listen(PORT, () => {
-    console.log(`Server läuft auf http://localhost:${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`🚀 Server läuft auf http://localhost:${PORT}`));
