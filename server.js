@@ -13,9 +13,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// MongoDB
+// MongoDB mit erhöhtem Timeout
 const mongoURI = process.env.MONGODB_URI;
-mongoose.connect(mongoURI)
+mongoose.connect(mongoURI, {
+    serverSelectionTimeoutMS: 30000 // 30 Sekunden Timeout
+})
     .then(() => console.log("✅ Mit MongoDB verbunden"))
     .catch(err => console.error("❌ MongoDB-Verbindungsfehler:", err));
 
@@ -39,8 +41,15 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", async (socket) => {
     console.log("🔌 Neuer Benutzer verbunden");
 
-    const messages = await ChatMessage.find().sort({ timestamp: 1 });
-    socket.emit("chatHistory", messages);
+    // Lade nur die letzten 50 Nachrichten
+    try {
+        const messages = await ChatMessage.find()
+            .sort({ timestamp: -1 })
+            .limit(50);
+        socket.emit("chatHistory", messages.reverse());
+    } catch (err) {
+        console.error("Fehler beim Laden der Nachrichten:", err);
+    }
 
     socket.on("login", ({ username, password }) => {
         if (users[username] === password) {
