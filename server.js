@@ -1,82 +1,107 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
+import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// MongoDB mit erhöhtem Timeout
-const mongoURI = process.env.MONGODB_URI;
-mongoose.connect(mongoURI, {
-    serverSelectionTimeoutMS: 30000 // 30 Sekunden Timeout
-})
-    .then(() => console.log("✅ Mit MongoDB verbunden"))
-    .catch(err => console.error("❌ MongoDB-Verbindungsfehler:", err));
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
 
-const chatSchema = new mongoose.Schema({
-    username: String,
-    message: String,
-    timestamp: { type: Date, default: Date.now },
-});
-
-const ChatMessage = mongoose.model("ChatMessage", chatSchema);
-
-// Benutzer
+// Benutzer (für Login)
 const users = {
-    Blizzz: "1234",
-    Samuel: "1234",
-    Temp: "1234"
+    "Blizzz": "1234",
+    "Samuel": "1234",
+    "Temp": "1234"
 };
 
-app.use(express.static(path.join(__dirname, "public")));
+// Chats im RAM speichern
+let chats = {
+    "Gruppe": []
+};
 
-io.on("connection", async (socket) => {
-    console.log("🔌 Neuer Benutzer verbunden");
+// --- MULTER Setup für Uploads ---
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-    // Lade nur die letzten 50 Nachrichten
-    try {
-        const messages = await ChatMessage.find()
-            .sort({ timestamp: -1 })
-            .limit(50);
-        socket.emit("chatHistory", messages.reverse());
-    } catch (err) {
-        console.error("Fehler beim Laden der Nachrichten:", err);
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        const uniqueName = Date.now() + "_" + file.originalname;
+        cb(null, uniqueName);
     }
+});
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+// Upload Endpoint
+app.post("/upload", upload.single("file"), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "Keine Datei hochgeladen" });
+
+    // Rückgabe nur Name + URL
+    res.json({
+        url: `/uploads/${req.file.filename}`,
+        name: req.file.originalname
+    });
+});
+
+// Uploads statisch verfügbar machen
+app.use("/uploads", express.static(uploadDir));
+
+// --- SOCKET.IO ---
+io.on("connection", (socket) => {
+    let currentUser = null;
+
+    // LOGIN
     socket.on("login", ({ username, password }) => {
-        if (users[username] === password) {
-            socket.username = username;
+        if (users[username] && users[username] === password) {
+            currentUser = username;
             socket.emit("loginSuccess", username);
-            io.emit("userJoined", username);
+            io.emit("userList", Object.keys(users));
         } else {
-            socket.emit("loginError", "Falscher Benutzername oder Passwort");
+            socket.emit("loginError", "Benutzername oder Passwort falsch");
         }
     });
 
-    socket.on("chatMessage", async (msg) => {
-        if (!socket.username) return;
-        const chatMsg = new ChatMessage({ username: socket.username, message: msg });
-        await chatMsg.save();
-        io.emit("chatMessage", chatMsg);
+    // Chat auswählen
+    socket.on("joinChat", (chatName) => {
+        if (!chats[chatName]) chats[chatName] = [];
+        socket.emit("chatHistory", chats[chatName]);
     });
 
-    socket.on("clearChat", async () => {
-        await ChatMessage.deleteMany({});
-        io.emit("chatCleared");
+    // Textnachrichten
+    socket.on("chatMessage", ({ recipient, text }) => {
+        const message = { sender: currentUser, text };
+        if (!chats[recipient]) chats[recipient] = [];
+        chats[recipient].push(message);
+        io.emit("chatMessage", message);
     });
 
-    socket.on("disconnect", () => {
-        if (socket.username) io.emit("userLeft", socket.username);
+    // Datei-Nachrichten
+    socket.on("fileMessage", ({ recipient, file }) => {
+        const message = { sender: currentUser, file };
+        if (!chats[recipient]) chats[recipient] = [];
+        chats[recipient].push(message);
+        io.emit("chatMessage", message);
+    });
+
+    // Chat leeren
+    socket.on("clearChat", (chatName) => {
+        if (chats[chatName]) {
+            chats[chatName] = [];
+            io.emit("chatHistory", []);
+        }
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server läuft auf http://localhost:${PORT}`));
+// SERVER START
+server.listen(3000, () => {
+    console.log("Server läuft auf http://localhost:3000");
+});

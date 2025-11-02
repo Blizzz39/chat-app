@@ -1,75 +1,42 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat App</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        #loginDiv, #chatDiv {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            width: 90%;
-            max-width: 400px;
-        }
-
-        h2 { text-align: center; margin-bottom: 20px; }
-
-        input[type="text"], input[type="password"] {
-            width: 100%; padding: 10px; margin: 5px 0 15px 0;
-            border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;
-        }
-
-        button {
-            padding: 10px; width: 100%;
-            border: none; border-radius: 5px;
-            background-color: #007bff; color: white; font-weight: bold; cursor: pointer;
-        }
-
-        button:hover { background-color: #0056b3; }
-
-        #chatBox {
-            height: 400px; overflow-y: auto; border: 1px solid #ccc;
-            padding: 10px; margin-bottom: 10px; border-radius: 5px; background-color: #f9f9f9;
-        }
-
-        #chatBox p { margin: 5px 0; padding: 5px 10px; border-radius: 5px; background-color: #e4e6eb; }
-
-        #chatForm { display: flex; gap: 10px; }
-        #messageInput { flex-grow: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-
-        #clearBtn { background-color: #dc3545; margin-top: 10px; }
-        #clearBtn:hover { background-color: #a71d2a; }
-    </style>
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div id="loginDiv">
-    <h2>Login</h2>
-    <input type="text" id="username" placeholder="Benutzername">
-    <input type="password" id="password" placeholder="Passwort">
-    <button id="loginBtn">Login</button>
-    <p id="loginError" style="color:red;"></p>
+<!-- Login -->
+<div id="loginScreen" class="fullscreen">
+    <div class="login-box">
+        <h1>Willkommen</h1>
+        <p>Bitte logge dich ein</p>
+        <input id="usernameInput" type="text" placeholder="Benutzername" />
+        <input id="passwordInput" type="password" placeholder="Passwort" />
+        <button id="loginBtn">Login</button>
+        <p id="errorMsg" class="error"></p>
+    </div>
 </div>
 
-<div id="chatDiv" style="display:none;">
-    <h2>Chat</h2>
-    <div id="chatBox"></div>
-    <form id="chatForm">
-        <input type="text" id="messageInput" placeholder="Nachricht..." autocomplete="off">
-        <button>Senden</button>
-    </form>
-    <button id="clearBtn">Chat leeren</button>
+<!-- Chat -->
+<div id="chatScreen" class="hidden">
+    <div id="sidebar">
+        <h3>Kontakte</h3>
+        <ul id="userList"></ul>
+    </div>
+
+    <div id="chatArea">
+        <div id="chatHeader"></div>
+        <div id="chatBox"></div>
+
+        <div id="messageForm">
+            <input type="text" id="messageInput" placeholder="Nachricht eingeben..." />
+            <input type="file" id="fileInput" />
+            <button id="sendBtn">Senden</button>
+            <button id="clearBtn">Chat leeren</button>
+        </div>
+    </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
